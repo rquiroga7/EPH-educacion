@@ -123,3 +123,24 @@ graf_gw %>%
   scale_y_continuous(labels = scales::comma) +
   scale_fill_viridis_d()
 ggsave("universidad_porcentaje_Gw.png")
+
+# Calculate cumulative sum beforehand
+graf_gw <- graf_gw %>%
+  arrange(pub_priv, rev(decil)) %>%
+  group_by(pub_priv) %>%
+  mutate(cumulative_porcentaje = cumsum(porcentaje)) %>%
+  mutate(center=cumulative_porcentaje - porcentaje / 2)
+
+# Plot
+graf_gw %>% 
+  ggplot(aes(x=pub_priv, y=porcentaje, fill=decil)) +
+  geom_col() +
+  geom_text(aes(label = decil, y = center), 
+            color = "white", size = 8) +
+  labs(title="Población estudiantil de universidades publicas y privadas según decil de ingreso per cápita familiar",
+       x="Universidades",
+       y="Porcentaje de personas que estudian en la universidad") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = scales::comma, limits=c(0,1), breaks = seq(0,1,.1)) +
+  scale_fill_viridis_d()
