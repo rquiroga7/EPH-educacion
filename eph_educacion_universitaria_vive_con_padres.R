@@ -14,7 +14,6 @@ dt$DECCFR <- as.numeric(as.character(dt$DECCFR))
 #Filtro NA y 0 de DECCFR
 dt<-dt %>% filter(DECCFR > 0 & DECCFR < 11)
 #Remove duplicated people based on CODUSU+COMPONENTE+NRO_HOGAR
-#Only if more than one trimester used
 #dt <- dt %>% distinct(CODUSU, COMPONENTE, NRO_HOGAR .keep_all = TRUE)
 
 per_decil<-data.frame(dt %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)))
@@ -26,7 +25,7 @@ per_decil$hogares<-dt %>%
   pull(n)
 
 #Filtro sólo las personas entre 19 y 25 años
-dt_age<-dt %>% filter(CH06>=19 & CH06<=25)
+dt_age<-dt %>% filter(CH06>=19 & CH06<=25 & CH03 %in% c(3,4,5))
 #Personas 17-25 años por decil Ingreso per cápita familiar
 per_decilpc<-data.frame(dt_age %>% group_by(DECCFR) %>% summarise(sum(PONDIH,na.rm = T)))
 names(per_decilpc)[2]<-"Personas"
@@ -43,7 +42,7 @@ ggplot(per_decilpc_s, aes(x=DECCFR, y=perc)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma)
-ggsave("per_decilpc.png")
+ggsave("con_padres_per_decilpc.png")
 #Remove rows with DECCFR==NA and DECCFR==0
 
 
@@ -82,7 +81,7 @@ ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma) +
   scale_fill_manual(values=c("blue", "red"), name="Universidad", labels=c("Privada", "Pública"))
-ggsave("universidad_absoluto.png")
+ggsave("con_padres_universidad_absoluto.png")
 
 
 
@@ -100,7 +99,7 @@ ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma) +
   scale_fill_manual(values=c("blue", "red"), name="Universidad", labels=c("Privada", "Pública"))
-ggsave("universidad_porcentaje.png")
+ggsave("con_padres_universidad_porcentaje.png")
 
 graf_gw<- dt_age %>% 
   filter(CH10==1 & CH12==7) %>% 
@@ -133,7 +132,7 @@ graf_gw %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_y_continuous(labels = scales::comma, limits=c(0,1), breaks = seq(0,1,.1)) +
   scale_fill_viridis_d()
-  ggsave("universidad_porcentaje_Gw.png")
+  ggsave("con_padres_universidad_porcentaje_Gw.png")
 
   #Now do the same but only for students living with parents
 
