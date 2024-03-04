@@ -1,4 +1,4 @@
-install.packages('eph')
+#install.packages('eph')
 library(readxl)
 library(eph)
 library(dplyr)
@@ -6,19 +6,17 @@ library(tidyr)
 library(purrr)
 library(ggplot2)
 base <- get_microdata(year = 2019, 
-<<<<<<< HEAD
-                    trimester = c(4),
-=======
-                    trimester = c(1,2,3,4),
->>>>>>> b394e24ccdac11837390452f8405b42547f42e8b
+                    trimester = 4,
                     type = 'individual')
 dt<- base
  #Convert DECCFR to numeric
 dt$DECCFR <- as.numeric(as.character(dt$DECCFR))
 #Filtro NA y 0 de DECCFR
 dt<-dt %>% filter(DECCFR > 0 & DECCFR < 11)
-#Remove duplicated people based on CODUSU+COMPONENTE
-dt <- dt %>% distinct(CODUSU, COMPONENTE, NRO_HOGAR .keep_all = TRUE)
+# #Remove duplicated people based on CODUSU+COMPONENTE
+# dt <- dt %>% distinct(CODUSU, COMPONENTE, .keep_all = TRUE) 
+# ##GW: Cuidado, no hay personas duplicadas. Te falta la variable de NRO_HOGAR
+# dt <- dt %>% distinct(CODUSU,NRO_HOGAR, COMPONENTE, .keep_all = TRUE) 
 
 per_decil<-data.frame(dt %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)))
 names(per_decil)[2]<-"Personas"
@@ -27,6 +25,7 @@ per_decil$hogares<-dt %>%
   distinct(CODUSU,NRO_HOGAR,PONDIH) %>% 
   summarise(n = sum(PONDIH,na.rm = T))%>% 
   pull(n)
+
 #Filtro sólo las personas entre 19 y 25 años
 dt_age<-dt %>% filter(CH06>=19 & CH06<=25)
 #Personas 17-25 años por decil Ingreso per cápita familiar
@@ -61,6 +60,7 @@ per_decilpc$estudiauniv<-dt_age %>%
   group_by(DECCFR)  %>% 
   filter(CH10==1 & CH12==7) %>% 
   summarise(n = sum(PONDIH,na.rm = T)) %>% pull(n)
+
 #Personas por decil Ingreso per cápita familiar y estudia actualmente en la universidad publica
 per_decilpc$estudiaunivpub<-dt_age %>% filter(CH10==1 & CH12==7 & CH11==1)  %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)) %>% pull(n)
 
@@ -106,22 +106,20 @@ ggsave("universidad_porcentaje.png")
 
 graf_gw<- dt_age %>% 
   filter(CH10==1 & CH12==7) %>% 
-  mutate(pub_priv = case_when(CH11 == 1~"Públicas",
-                              CH11 != 1~"Privadas")) %>%
+  mutate(pub_priv = case_when(CH11 == 1~"Pública",
+                              CH11 != 1~"Privada")) %>%
   group_by(DECCFR,pub_priv) %>% 
   summarise(n = sum(PONDIH,na.rm = T)) %>% 
   group_by(pub_priv) %>% 
   mutate(porcentaje = n/sum(n)) %>% 
-  mutate(decil = factor(DECCFR,levels = 10:1))  
+  mutate(decil = factor(DECCFR,levels = 1:10))  
   
 
-<<<<<<< HEAD
-=======
 graf_gw %>% 
   ggplot(., aes(x=pub_priv, y=porcentaje,group=decil, fill=decil))+
   geom_col() +
-  labs(title="Población estudiantil de universidades publicas y privadas según decil de ingreso per cápita familiar",
-       x="Universidades",
+  labs(title="Distribución de personas según decil de pertenencia en universidades publicas y privadas",
+       x="Decil de ingreso per cápita familiar",
        y="Porcentaje de personas que estudian en la universidad") +
   theme_light() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
@@ -129,29 +127,3 @@ graf_gw %>%
   scale_y_continuous(labels = scales::comma) +
   scale_fill_viridis_d()
 ggsave("universidad_porcentaje_Gw.png")
-
->>>>>>> b394e24ccdac11837390452f8405b42547f42e8b
-# Calculate cumulative sum beforehand
-graf_gw <- graf_gw %>%
-  arrange(pub_priv, rev(decil)) %>%
-  group_by(pub_priv) %>%
-  mutate(cumulative_porcentaje = cumsum(porcentaje)) %>%
-  mutate(center=cumulative_porcentaje - porcentaje / 2)
-
-# Plot
-graf_gw %>% 
-  ggplot(aes(x=pub_priv, y=porcentaje, fill=decil)) +
-  geom_col() +
-  geom_text(aes(label = decil, y = center), 
-            color = "white", size = 8) +
-  labs(title="Población estudiantil de universidades publicas y privadas según decil de ingreso per cápita familiar",
-       x="Universidades",
-       y="Porcentaje de personas que estudian en la universidad") +
-  theme_light() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  scale_y_continuous(labels = scales::comma, limits=c(0,1), breaks = seq(0,1,.1)) +
-  scale_fill_viridis_d()
-<<<<<<< HEAD
-  ggsave("universidad_porcentaje_Gw.png")
-=======
->>>>>>> b394e24ccdac11837390452f8405b42547f42e8b
