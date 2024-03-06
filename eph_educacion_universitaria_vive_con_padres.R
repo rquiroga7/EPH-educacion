@@ -134,5 +134,41 @@ graf_gw %>%
   scale_fill_viridis_d()
   ggsave("con_padres_universidad_porcentaje_Gw.png")
 
-  #Now do the same but only for students living with parents
+#Calculate the sum of porcentaje for decil 1-6 and 7-10, for each pub_priv value
+tabla1<-graf_gw %>% 
+  group_by(pub_priv) %>% 
+  summarise(deciles_1_6 = sum(porcentaje[1:6]),
+            deciles_7_10 = sum(porcentaje[7:10])) %>% 
+  mutate( deciles_1_6 = round(deciles_1_6, 2),
+         deciles_7_10 = round(deciles_7_10, 2))
 
+names(tabla1)<-c("Universidades","deciles 1-6","deciles 7-10")
+tabla1
+
+tabla2 <- df %>% 
+  group_by(type) %>%
+  mutate(deciles_1_6 = ifelse(type=="Privada",sum(estudiauniv[1:6])-sum(estudiaunivpub[1:6]),sum(estudiauniv[1:6])),
+         deciles_7_10 = ifelse(type=="Privada",sum(estudiauniv[7:10])-sum(estudiaunivpub[7:10]),sum(estudiauniv[7:10]))) %>%
+  summarise(deciles_1_6 = first(deciles_1_6),
+            deciles_7_10 = first(deciles_7_10)) %>%
+  mutate(deciles_1_6 = round(deciles_1_6, 2),
+         deciles_7_10 = round(deciles_7_10, 2))
+
+names(tabla2)<-c("Universidades","deciles 1-6","deciles 7-10")
+tabla2
+
+#Qué porcentaje de los estudiantes universitarios podrían dejar la universidad si se les quita la gratuidad?
+#Para realizar este cálculo, se asume que los deciles 7-10 no se ven afectados por la gratuidad. 
+#Para estimar los estudiantes que dejarían la universidad pública se asume que la proporción de estudiantes 
+#de deciles 7-10 y 1-6 pasaría a ser la misma que se observa en las privadas.
+perc_total<-( tabla2[2,2]  - tabla2[1,2]/tabla2[1,3] *tabla2[2,3] ) / sum(tabla2[1:2,2:3] ) * 100
+#33% de los estudiantes universitarios podrían dejar la universidad si se les quita la gratuidad y las 
+#universidades públicas tuvieran precios similares a los de las universidades privadas
+paste0("El ",round(perc_total,0),"% de los estudiantes universitarios podrían dejar la universidad si se les quita la gratuidad y las universidades públicas tuvieran precios similares a las universidades privadas")
+
+
+#Cuantos de los estudiantes universitarios de deciles 1-6 podrían dejar la universidad publica?
+perc_dec1_6<-( tabla2[2,2]  - tabla2[1,2]/tabla2[1,3] *tabla2[2,3] ) / sum(tabla2[1:2,2] ) * 100
+#60% de los estudiantes universitarios de deciles 1-6 podrían dejar la universidad si se les quita la gratuidad y las 
+#universidades públicas tuvieran precios similares a los de las universidades privadas
+paste0("El ",round(perc_dec1_6,0),"% de los estudiantes universitarios de deciles 1-6 podrían dejar la universidad si se les quita la gratuidad y las universidades públicas tuvieran precios similares a las universidades privadas")
