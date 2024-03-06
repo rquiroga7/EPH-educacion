@@ -145,6 +145,14 @@ tabla1<-graf_gw %>%
 names(tabla1)<-c("Universidades","deciles 1-6","deciles 7-10")
 tabla1
 
+#Create pretty table image from tabla1, with minimal table size
+library(kableExtra)
+kable(tabla1, "html") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(0, bold = T, color = "white", background = "grey") %>%
+  save_kable("con_padres_universidad_porcentaje_Gw_tabla.png")
+
+
 tabla2 <- df %>% 
   group_by(type) %>%
   mutate(deciles_1_6 = ifelse(type=="Privada",sum(estudiauniv[1:6])-sum(estudiaunivpub[1:6]),sum(estudiauniv[1:6])),
@@ -156,6 +164,13 @@ tabla2 <- df %>%
 
 names(tabla2)<-c("Universidades","deciles 1-6","deciles 7-10")
 tabla2
+
+#Create pretty table image from tabla1, with minimal table size
+library(kableExtra)
+kable(tabla2, "html") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(0, bold = T, color = "white", background = "grey") %>%
+  save_kable(file= "con_padres_universidad_absoluto_Gw_tabla.png",density=600)
 
 #Qué porcentaje de los estudiantes universitarios podrían dejar la universidad si se les quita la gratuidad?
 #Para realizar este cálculo, se asume que los deciles 7-10 no se ven afectados por la gratuidad. 
