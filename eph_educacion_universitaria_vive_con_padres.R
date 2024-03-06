@@ -160,15 +160,11 @@ tabla2
 #Qué porcentaje de los estudiantes universitarios podrían dejar la universidad si se les quita la gratuidad?
 #Para realizar este cálculo, se asume que los deciles 7-10 no se ven afectados por la gratuidad. 
 #Para estimar los estudiantes que dejarían la universidad pública se asume que la proporción de estudiantes 
-#de deciles 7-10 y 1-6 pasaría a ser la misma que se observa en las privadas.
+# de deciles 7-10 y 1-6 pasaría a ser la misma que se observa en las privadas.
 perc_total<-( tabla2[2,2]  - tabla2[1,2]/tabla2[1,3] *tabla2[2,3] ) / sum(tabla2[1:2,2:3] ) * 100
-#33% de los estudiantes universitarios podrían dejar la universidad si se les quita la gratuidad y las 
-#universidades públicas tuvieran precios similares a los de las universidades privadas
 paste0("El ",round(perc_total,0),"% de los estudiantes universitarios podrían dejar la universidad si se les quita la gratuidad y las universidades públicas tuvieran precios similares a las universidades privadas")
 
 
 #Cuantos de los estudiantes universitarios de deciles 1-6 podrían dejar la universidad publica?
 perc_dec1_6<-( tabla2[2,2]  - tabla2[1,2]/tabla2[1,3] *tabla2[2,3] ) / sum(tabla2[1:2,2] ) * 100
-#60% de los estudiantes universitarios de deciles 1-6 podrían dejar la universidad si se les quita la gratuidad y las 
-#universidades públicas tuvieran precios similares a los de las universidades privadas
 paste0("El ",round(perc_dec1_6,0),"% de los estudiantes universitarios de deciles 1-6 podrían dejar la universidad si se les quita la gratuidad y las universidades públicas tuvieran precios similares a las universidades privadas")
