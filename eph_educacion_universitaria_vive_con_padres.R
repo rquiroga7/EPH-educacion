@@ -24,7 +24,7 @@ per_decil$hogares<-dt %>%
   summarise(n = sum(PONDIH,na.rm = T))%>% 
   pull(n)
 
-#Filtro sólo las personas entre 19 y 25 años
+#Filtro sólo las personas entre 19 y 25 años y que sean hijos/nietos del jefe/a de hogar
 dt_age<-dt %>% filter(CH06>=19 & CH06<=25 & CH03 %in% c(3,4,5))
 #Personas 17-25 años por decil Ingreso per cápita familiar
 per_decilpc<-data.frame(dt_age %>% group_by(DECCFR) %>% summarise(sum(PONDIH,na.rm = T)))
@@ -183,3 +183,33 @@ paste0("El ",round(perc_total,0),"% de los estudiantes universitarios podrían d
 #Cuantos de los estudiantes universitarios de deciles 1-6 podrían dejar la universidad publica?
 perc_dec1_6<-( tabla2[2,2]  - tabla2[1,2]/tabla2[1,3] *tabla2[2,3] ) / sum(tabla2[1:2,2] ) * 100
 paste0("El ",round(perc_dec1_6,0),"% de los estudiantes universitarios de deciles 1-6 podrían dejar la universidad si se les quita la gratuidad y las universidades públicas tuvieran precios similares a las universidades privadas")
+
+#Calcular el porcentaje de estudiantes de deciles 1-6 por provincia
+graf_gw2<- dt_age %>% 
+  filter(CH10==1 & CH12==7) %>% 
+  mutate(pub_priv = case_when(CH11 == 1~"Públicas",
+                              CH11 != 1~"Privadas")) %>%
+  group_by(DECCFR,pub_priv,REGION) %>% 
+  summarise(n = sum(PONDIH,na.rm = T)) %>% 
+  group_by(pub_priv,REGION) %>% 
+  mutate(porcentaje = n/sum(n)) %>% 
+  mutate(decil = factor(DECCFR,levels = 10:1)) %>%
+  #casewhen 01 = Gran Buenos Aires      40 = NOA        41 = NEA        42 = Cuyo        43 = Pampeana       44 = Patagonia
+  mutate(REGION = case_when(REGION == 1~"Gran Buenos Aires",
+                            REGION == 40~"NOA",
+                            REGION == 41~"NEA",
+                            REGION == 42~"Cuyo",
+                            REGION == 43~"Pampeana",
+                            REGION == 44~"Patagonia"))
+  
+graf_gw3 <- graf_gw2 %>%
+  mutate(decile_group = ifelse(decil %in% 1:6, "deciles_1_6", "deciles_7_10")) %>%
+  group_by(pub_priv, REGION, decile_group) %>%
+  summarise(n = sum(n)) %>%
+  pivot_wider(names_from = decile_group, values_from = n)
+
+tabla3<-graf_gw3 %>%
+  group_by(pub_priv, REGION) %>%
+  mutate(total=deciles_1_6+deciles_7_10) %>%
+  mutate(deciles_1_6 = round(deciles_1_6/total*100,0),
+         deciles_7_10 = round(deciles_7_10/total*100,0))
