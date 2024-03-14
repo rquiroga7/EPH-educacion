@@ -5,6 +5,7 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 library(ggplot2)
+library(webshot)
 base <- get_microdata(year = 2019, 
                     trimester = c(4),
                     type = 'individual')
@@ -35,7 +36,7 @@ per_decilpc_s<-per_decilpc %>% mutate(perc=Personas/sum(Personas)*100)
 #plot perc
 ggplot(per_decilpc_s, aes(x=DECCFR, y=perc)) +
   geom_bar(stat="identity", alpha=0.5) +
-  labs(title="Porcentaje de personas 19-25 años en cada decil de ingreso per cápita familiar",
+  labs(title="Porcentaje de jóvenes 19-25 años en cada decil de ingreso per cápita familiar",
        x="Decil de ingreso per cápita familiar",
        y="Porcentaje de personas") +
   theme_light() +
@@ -73,9 +74,9 @@ df <- rbind(df1, df2)
 # Plot
 ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   geom_bar(stat="identity", alpha=0.5) +
-  labs(title="Número de personas que estudian en la universidad por decil de ingreso per cápita familiar",
+  labs(title="Número de jóvenes que estudian en la universidad por decil de ingreso per cápita familiar",
        x="Decil de ingreso per cápita familiar",
-       y="Número de personas que estudian en la universidad") +
+       y="Número de jóvenes que estudian en la universidad") +
   theme_light() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
@@ -91,9 +92,9 @@ df <- rbind(df1, df2)
 #now plot
 ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   geom_bar(stat="identity", alpha=0.5) +
-  labs(title="Porcentaje de personas que estudian en la universidad por decil de ingreso per cápita familiar",
+  labs(title="Porcentaje de jóvenes que estudian en la universidad por decil de ingreso per cápita familiar",
        x="Decil de ingreso per cápita familiar",
-       y="Porcentaje de personas que estudian en la universidad") +
+       y="Porcentaje de jóvenes que estudian en la universidad") +
   theme_light() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
@@ -127,7 +128,7 @@ graf_gw %>%
             color = "white", size = 8) +
   labs(title="Población estudiantil de universidades publicas y privadas según decil de ingreso per cápita familiar",
        x="Universidades",
-       y="Porcentaje de personas que estudian en la universidad") +
+       y="Porcentaje de jóvenes que estudian en la universidad") +
   theme_light() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_y_continuous(labels = scales::comma, limits=c(0,1), breaks = seq(0,1,.1)) +
@@ -213,3 +214,4 @@ tabla3<-graf_gw3 %>%
   mutate(total=deciles_1_6+deciles_7_10) %>%
   mutate(deciles_1_6 = round(deciles_1_6/total*100,0),
          deciles_7_10 = round(deciles_7_10/total*100,0))
+
