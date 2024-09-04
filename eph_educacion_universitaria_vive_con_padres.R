@@ -5,8 +5,9 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 library(ggplot2)
-base <- get_microdata(year = 2019, 
-                    trimester = c(4),
+year=c(2003,2008,2013,2018,2023)
+base <- get_microdata(year = year, 
+                    trimester = c(3),
                     type = 'individual')
 dt<- base
  #Convert DECCFR to numeric
@@ -42,7 +43,7 @@ ggplot(per_decilpc_s, aes(x=DECCFR, y=perc)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma)
-ggsave("con_padres_per_decilpc.png")
+ggsave(paste0(year,"_con_padres_per_decilpc.png"))
 #Remove rows with DECCFR==NA and DECCFR==0
 
 
@@ -81,7 +82,8 @@ ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma) +
   scale_fill_manual(values=c("blue", "red"), name="Universidad", labels=c("Privada", "Pública"))
-ggsave("con_padres_universidad_absoluto.png")
+#ggsave("con_padres_universidad_absoluto.png")
+ggsave(paste0(year,"_con_padres_universidad_absoluto.png"))
 
 
 
@@ -99,7 +101,8 @@ ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma) +
   scale_fill_manual(values=c("blue", "red"), name="Universidad", labels=c("Privada", "Pública"))
-ggsave("con_padres_universidad_porcentaje.png")
+#ggsave("con_padres_universidad_porcentaje.png")
+ggsave(paste0(year,"_con_padres_universidad_porcentaje.png"))
 
 graf_gw<- dt_age %>% 
   filter(CH10==1 & CH12==7) %>% 
@@ -132,7 +135,8 @@ graf_gw %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_y_continuous(labels = scales::comma, limits=c(0,1), breaks = seq(0,1,.1)) +
   scale_fill_viridis_d()
-  ggsave("con_padres_universidad_porcentaje_Gw.png")
+  #ggsave("con_padres_universidad_porcentaje_Gw.png")
+  ggsave(paste0(year,"_con_padres_universidad_porcentaje_Gw.png"))
 
 #Calculate the sum of porcentaje for decil 1-6 and 7-10, for each pub_priv value
 tabla1<-graf_gw %>% 
@@ -214,6 +218,15 @@ tabla3<-graf_gw3 %>%
   mutate(deciles_1_6 = round(deciles_1_6/total*100,0),
          deciles_7_10 = round(deciles_7_10/total*100,0))
 
+#Sacar los datos para Córdoba
+
 #Como evolucionaron los % de la tabla 1 por años?
 
 #Cuantos son primera generación de estudiantes universitarios?
+
+#Recalcular deciles de jóvenes
+
+#Qué % vive con los padres?
+
+#Qué pasa con los que trabajan?
+
