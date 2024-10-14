@@ -1,4 +1,4 @@
-install.packages('eph')
+#install.packages('eph')
 library(readxl)
 library(eph)
 library(dplyr)
@@ -14,20 +14,19 @@ dt<- base
 dt$DECCFR <- as.numeric(as.character(dt$DECCFR))
 #Filtro NA y 0 de DECCFR
 dt<-dt %>% filter(DECCFR > 0 & DECCFR < 11)
-#Remove duplicated people based on CODUSU+COMPONENTE+NRO_HOGAR
-#dt <- dt %>% distinct(CODUSU, COMPONENTE, NRO_HOGAR .keep_all = TRUE)
 
 per_decil<-data.frame(dt %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)))
 names(per_decil)[2]<-"Personas"
 per_decil$hogares<-dt %>% 
   group_by(DECCFR) %>%
+  #Remove duplicated people based on CODUSU+NRO_HOGAR
   distinct(CODUSU,NRO_HOGAR,PONDIH) %>% 
   summarise(n = sum(PONDIH,na.rm = T))%>% 
   pull(n)
 
 #Filtro sólo las personas entre 19 y 25 años y que sean hijos/nietos del jefe/a de hogar
 dt_age<-dt %>% filter(CH06>=19 & CH06<=25 & CH03 %in% c(3,4,5))
-#Personas 17-25 años por decil Ingreso per cápita familiar
+#Personas 19-25 años por decil Ingreso per cápita familiar
 per_decilpc<-data.frame(dt_age %>% group_by(DECCFR) %>% summarise(sum(PONDIH,na.rm = T)))
 names(per_decilpc)[2]<-"Personas"
 
@@ -151,6 +150,7 @@ tabla1
 
 #Create pretty table image from tabla1, with minimal table size
 library(kableExtra)
+library(webshot2)
 kable(tabla1, "html") %>%
   kable_styling("striped", full_width = F) %>%
   row_spec(0, bold = T, color = "white", background = "grey") %>%
@@ -219,6 +219,104 @@ tabla3<-graf_gw3 %>%
          deciles_7_10 = round(deciles_7_10/total*100,0))
 
 #Sacar los datos para Córdoba
+graf_ciudad<- dt_age %>% 
+  filter(CH10==1 & CH12==7) %>% 
+
+  mutate(pub_priv = case_when(CH11 == 1~"Públicas",
+                              CH11 != 1~"Privadas")) %>%
+#2 = Gran La Plata
+#3 = Bahía Blanca ‐ Cerri
+#4 = Gran RosarioINDEC-EPH3
+#5 = Gran Santa Fé
+#6 = Gran Paraná
+#7 = Posadas
+#8 = Gran Resistencia
+#9 = Cdro. Rivadavia – Rada Tilly
+#10 = Gran Mendoza
+#12 = Corrientes
+#13 = Gran Córdoba
+#14 = Concordia
+#15 = Formosa
+#17 = Neuquén – Plottier
+#18 = S.del Estero ‐ La Banda
+#19 = Jujuy ‐ Palpalá
+#20 = Río Gallegos
+#22 = Gran Catamarca
+#23 = Salta
+#25 = La Rioja
+#26 = San Luis ‐ El Chorrillo
+#27 = Gran San Juan
+#29 = Gran Tucumán ‐ T. Viejo
+#30 = Santa Rosa ‐ Toay
+#31 = Ushuaia ‐ Río Grande
+#32 = Ciudad de Buenos Aires
+#33 = Partidos del GBA
+#34 = Mar del Plata ‐ Batán
+#36 = Río Cuarto
+#38 = San Nicolás – Villa Constitución
+#91 = Rawson – Trelew
+#93 = Viedma – Carmen de Patagones
+  mutate(AGLOMERADO = case_when(AGLOMERADO == 1~"Gran Buenos Aires",
+                            AGLOMERADO == 2~"Gran La Plata",
+                            AGLOMERADO == 3~"Bahía Blanca ‐ Cerri",
+                            AGLOMERADO == 4~"Gran Rosario",
+                            AGLOMERADO == 5~"Gran Santa Fé",
+                            AGLOMERADO == 6~"Gran Paraná",
+                            AGLOMERADO == 7~"Posadas",
+                            AGLOMERADO == 8~"Gran Resistencia",
+                            AGLOMERADO == 9~"Cdro. Rivadavia – Rada Tilly",
+                            AGLOMERADO == 10~"Gran Mendoza",
+                            AGLOMERADO == 12~"Corrientes",
+                            AGLOMERADO == 13~"Gran Córdoba",
+                            AGLOMERADO == 14~"Concordia",
+                            AGLOMERADO == 15~"Formosa",
+                            AGLOMERADO == 17~"Neuquén – Plottier",
+                            AGLOMERADO == 18~"S.del Estero ‐ La Banda",
+                            AGLOMERADO == 19~"Jujuy ‐ Palpalá",
+                            AGLOMERADO == 20~"Río Gallegos",
+                            AGLOMERADO == 22~"Gran Catamarca",
+                            AGLOMERADO == 23~"Salta",
+                            AGLOMERADO == 25~"La Rioja",
+                            AGLOMERADO == 26~"San Luis ‐ El Chorrillo",
+                            AGLOMERADO == 27~"Gran San Juan",
+                            AGLOMERADO == 29~"Gran Tucumán ‐ T. Viejo",
+                            AGLOMERADO == 30~"Santa Rosa ‐ Toay",
+                            AGLOMERADO == 31~"Ushuaia ‐ Río Grande",
+                            AGLOMERADO == 32~"Ciudad de Buenos Aires",
+                            AGLOMERADO == 33~"Partidos del GBA",
+                            AGLOMERADO == 34~"Mar del Plata ‐ Batán",
+                            AGLOMERADO == 36~"Río Cuarto",
+                            AGLOMERADO == 38~"San Nicolás – Villa Constitución",
+                            AGLOMERADO == 91~"Rawson – Trelew",
+                            AGLOMERADO == 93~"Viedma – Carmen de Patagones")) %>%
+  group_by(DECCFR,pub_priv,AGLOMERADO) %>% 
+  summarise(n = sum(PONDIH,na.rm = T)) %>% 
+  group_by(pub_priv) %>% 
+  mutate(porcentaje = n/sum(n)) %>% 
+  mutate(decil = factor(DECCFR,levels = 10:1))
+  #casewhen 01 = Gran Buenos Aires      40 = NOA        41 = NEA        42 = Cuyo        43 = Pampeana       44 = Patagonia
+  
+graf_ciudad2<-graf_ciudad %>%
+ mutate(decile_group = ifelse(decil %in% 1:5, "deciles_1_5", "deciles_6_10")) %>%
+  group_by(pub_priv, decile_group, AGLOMERADO) %>%
+  summarise(n = sum(n)) %>%
+  pivot_wider(names_from = decile_group, values_from = n) %>%
+  group_by(pub_priv,AGLOMERADO) %>%
+  mutate(total=deciles_1_5+deciles_6_10) %>%
+  mutate(deciles_1_5 = round(deciles_1_5/total*100,0),
+  deciles_6_10 = round(deciles_6_10/total*100,0)) %>%
+  #Add a percentage to the table
+  mutate(deciles_1_5p = paste0(deciles_1_5,"%")) %>%
+  mutate(deciles_6_10p = paste0(deciles_6_10,"%")) %>%
+  select(-deciles_1_5,-deciles_6_10)
+
+#Create a Kable table for graf_ciudad2 filtering by pub_priv=="Públicas"
+kable(graf_ciudad2 %>% filter(pub_priv=="Públicas"), "html") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(0, bold = T, color = "white", background = "grey") %>%
+  save_kable("deciles_publicas_ciudad.png")
+
+
 
 #Como evolucionaron los % de la tabla 1 por años?
 
