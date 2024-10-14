@@ -215,3 +215,8 @@ tabla3<-graf_gw3 %>%
   mutate(deciles_1_6 = round(deciles_1_6/total*100,0),
          deciles_7_10 = round(deciles_7_10/total*100,0))
 
+#Como evolucionaron los % de la tabla 1 por años?
+
+#Cuantos son primera generación de estudiantes universitarios?
+
+
