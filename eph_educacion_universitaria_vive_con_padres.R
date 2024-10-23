@@ -6,7 +6,7 @@ library(tidyr)
 library(purrr)
 library(ggplot2)
 #Tomo el promedio de los 4 trimestres de los últimos 3 años
-year=c(2023)
+year=c(2019,2020,2021,2022,2023)
 nombre= ifelse(length(year)>1, paste0(year[1],"_",year[length(year)]), as.character(year))
 base <- get_microdata(year = year, 
                     trimester = c(1,2,3,4),
