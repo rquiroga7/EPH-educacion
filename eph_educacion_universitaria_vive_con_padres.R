@@ -1,4 +1,4 @@
-install.packages('eph')
+#install.packages('eph')
 library(readxl)
 library(eph)
 library(dplyr)
@@ -53,6 +53,7 @@ ggsave(paste0(year,"_con_padres_per_decilpc.png"))
 #CH11==1 pública
 #CH11==2 privada
 #CH12==7 universitario (nuivel mas alto que cursó o cursa)
+#ESTADO==1 trabaja
 
 #Personas por decil Ingreso per cápita familiar y estudia actualmente en la universidad
 per_decilpc$estudiauniv<-dt_age %>% 
@@ -61,10 +62,10 @@ per_decilpc$estudiauniv<-dt_age %>%
   summarise(n = sum(PONDIH,na.rm = T)) %>% pull(n)
 #Personas por decil Ingreso per cápita familiar y estudia actualmente en la universidad publica
 per_decilpc$estudiaunivpub<-dt_age %>% filter(CH10==1 & CH12==7 & CH11==1)  %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)) %>% pull(n)
-
-per_decilpc<-per_decilpc %>% mutate(univ_perc=estudiauniv/Personas*100,univpub_perc=estudiaunivpub/Personas*100)
-per_decilpc<-per_decilpc %>% mutate(univpub_perc=estudiaunivpub/Personas*100,univpub_perc=estudiaunivpub/Personas*100)
-
+per_decilpc$estudiatrabaja<-dt_age %>% filter(CH10==1 & CH12==7 & ESTADO==1)  %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)) %>% pull(n)
+per_decilpc<-per_decilpc %>% mutate(univ_perc=estudiauniv/Personas*100,univpub_perc=estudiaunivpub/Personas*100,univtrabaja_perc=estudiatrabaja/estudiauniv*100)
+#per_decilpc<-per_decilpc %>% mutate(univpub_perc=estudiaunivpub/Personas*100,univpub_perc=estudiaunivpub/Personas*100)
+View(per_decilpc)
 
 # Create a new data frame with 'type' column
 df1 <- transform(per_decilpc, type = "Privada", y = estudiauniv - estudiaunivpub)
@@ -84,6 +85,8 @@ ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   scale_fill_manual(values=c("blue", "red"), name="Universidad", labels=c("Privada", "Pública"))
 #ggsave("con_padres_universidad_absoluto.png")
 ggsave(paste0(year,"_con_padres_universidad_absoluto.png"))
+
+
 
 
 
