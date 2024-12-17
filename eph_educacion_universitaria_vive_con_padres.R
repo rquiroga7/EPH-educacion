@@ -5,30 +5,35 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 library(ggplot2)
-year=c(2003,2008,2013,2018,2023)
+#Tomo el promedio de los 4 trimestres de los últimos 3 años
+year=c(2019,2020,2021,2022,2023)
+nombre= ifelse(length(year)>1, paste0(year[1],"_",year[length(year)]), as.character(year))
 base <- get_microdata(year = year, 
-                    trimester = c(3),
+                    trimester = c(1,2,3,4),
                     type = 'individual')
+nrow(base)
 dt<- base
+as.factor(levels(dt$ANO4))
+ndatos=length(levels(as.factor(dt$ANO4)))*length(levels(as.factor(dt$TRIMESTRE)))/2
  #Convert DECCFR to numeric
 dt$DECCFR <- as.numeric(as.character(dt$DECCFR))
 #Filtro NA y 0 de DECCFR
 dt<-dt %>% filter(DECCFR > 0 & DECCFR < 11)
-#Remove duplicated people based on CODUSU+COMPONENTE+NRO_HOGAR
-#dt <- dt %>% distinct(CODUSU, COMPONENTE, NRO_HOGAR .keep_all = TRUE)
 
-per_decil<-data.frame(dt %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)))
+per_decil<-data.frame(dt %>% group_by(DECCFR) %>% summarise(n = sum(PONDERA,na.rm = T) /ndatos) )
 names(per_decil)[2]<-"Personas"
 per_decil$hogares<-dt %>% 
   group_by(DECCFR) %>%
-  distinct(CODUSU,NRO_HOGAR,PONDIH) %>% 
-  summarise(n = sum(PONDIH,na.rm = T))%>% 
+  #Remove duplicated people based on CODUSU+NRO_HOGAR
+  distinct(CODUSU,NRO_HOGAR,PONDERA) %>% 
+  summarise(n = sum(PONDERA,na.rm = T) / ndatos)%>% 
   pull(n)
 
 #Filtro sólo las personas entre 19 y 25 años y que sean hijos/nietos del jefe/a de hogar
-dt_age<-dt %>% filter(CH06>=19 & CH06<=25 & CH03 %in% c(3,4,5))
-#Personas 17-25 años por decil Ingreso per cápita familiar
-per_decilpc<-data.frame(dt_age %>% group_by(DECCFR) %>% summarise(sum(PONDIH,na.rm = T)))
+dt_age<-dt %>% filter(CH06>=18 & CH06<=25 & CH03 %in% c(3,4,5))
+dt_age<-dt %>% filter(CH06>=18 & CH06<=25)
+#Personas 19-25 años por decil Ingreso per cápita familiar
+per_decilpc<-data.frame(dt_age %>% group_by(DECCFR) %>% summarise(sum(PONDERA,na.rm = T) /ndatos) )
 names(per_decilpc)[2]<-"Personas"
 
 #Histograma de personas por decil de ingreso per cápita familiar como % del total
@@ -36,15 +41,29 @@ per_decilpc_s<-per_decilpc %>% mutate(perc=Personas/sum(Personas)*100)
 #plot perc
 ggplot(per_decilpc_s, aes(x=DECCFR, y=perc)) +
   geom_bar(stat="identity", alpha=0.5) +
-  labs(title="Porcentaje de personas 19-25 años en cada decil de ingreso per cápita familiar",
+  labs(title="Porcentaje de jóvenes 19-25 años en cada decil de ingreso per cápita familiar",
        x="Decil de ingreso per cápita familiar",
        y="Porcentaje de personas") +
   theme_light() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma)
-ggsave(paste0(year,"_con_padres_per_decilpc.png"))
+ggsave(paste0(nombre,"_con_padres_per_decilpc.png"))
 #Remove rows with DECCFR==NA and DECCFR==0
+
+#Histograma de personas por decil de ingreso per cápita familiar como % del total
+per_decilpc_s<-per_decilpc %>% mutate(perc=Personas)
+#plot perc
+ggplot(per_decilpc_s, aes(x=DECCFR, y=perc)) +
+  geom_bar(stat="identity", alpha=0.5) +
+  labs(title="Porcentaje de jóvenes 19-25 años en cada decil de ingreso per cápita familiar",
+       x="Decil de ingreso per cápita familiar",
+       y="Porcentaje de personas") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_x_continuous(breaks = seq(1, 10, 1)) +
+  scale_y_continuous(labels = scales::comma)
+ggsave(paste0(nombre,"_con_padres_per_decil.png"))
 
 
 #NIVEL_ED==5 Superior Universitaria Incompleta
@@ -59,7 +78,7 @@ ggsave(paste0(year,"_con_padres_per_decilpc.png"))
 per_decilpc$estudiauniv<-dt_age %>% 
   group_by(DECCFR)  %>% 
   filter(CH10==1 & CH12 %in% c(7,8)) %>% #Universitario o posgrado 
-  summarise(n = sum(PONDIH,na.rm = T)) %>% pull(n)
+  summarise(n = sum(PONDERA,na.rm = T) / ndatos) %>% pull(n)
 #Personas por decil Ingreso per cápita familiar y estudia actualmente en la universidad publica
 per_decilpc$estudiaunivpub<-dt_age %>% filter(CH10==1 & CH12==7 & CH11==1)  %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)) %>% pull(n)
 per_decilpc$estudiatrabaja<-dt_age %>% filter(CH10==1 & CH12==7 & ESTADO==1)  %>% group_by(DECCFR) %>% summarise(n = sum(PONDIH,na.rm = T)) %>% pull(n)
@@ -75,18 +94,16 @@ df <- rbind(df1, df2)
 # Plot
 ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   geom_bar(stat="identity", alpha=0.5) +
-  labs(title="Número de personas que estudian en la universidad por decil de ingreso per cápita familiar",
+  labs(title="Número de jóvenes que estudian en la universidad por decil de ingreso per cápita familiar",
        x="Decil de ingreso per cápita familiar",
-       y="Número de personas que estudian en la universidad") +
+       y="Número de jóvenes que estudian en la universidad") +
   theme_light() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma) +
   scale_fill_manual(values=c("blue", "red"), name="Universidad", labels=c("Privada", "Pública"))
 #ggsave("con_padres_universidad_absoluto.png")
-ggsave(paste0(year,"_con_padres_universidad_absoluto.png"))
-
-
+ggsave(paste0(nombre,"_con_padres_universidad_absoluto.png"))
 
 
 
@@ -96,23 +113,23 @@ df <- rbind(df1, df2)
 #now plot
 ggplot(df, aes(x=DECCFR, y=y, fill=type)) +
   geom_bar(stat="identity", alpha=0.5) +
-  labs(title="Porcentaje de personas que estudian en la universidad por decil de ingreso per cápita familiar",
+  labs(title="Porcentaje de jóvenes que estudian en la universidad por decil de ingreso per cápita familiar",
        x="Decil de ingreso per cápita familiar",
-       y="Porcentaje de personas que estudian en la universidad") +
+       y="Porcentaje de jóvenes que estudian en la universidad") +
   theme_light() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_x_continuous(breaks = seq(1, 10, 1)) +
   scale_y_continuous(labels = scales::comma) +
   scale_fill_manual(values=c("blue", "red"), name="Universidad", labels=c("Privada", "Pública"))
 #ggsave("con_padres_universidad_porcentaje.png")
-ggsave(paste0(year,"_con_padres_universidad_porcentaje.png"))
+ggsave(paste0(nombre,"_con_padres_universidad_porcentaje.png"))
 
 graf_gw<- dt_age %>% 
   filter(CH10==1 & CH12==7) %>% 
   mutate(pub_priv = case_when(CH11 == 1~"Públicas",
                               CH11 != 1~"Privadas")) %>%
   group_by(DECCFR,pub_priv) %>% 
-  summarise(n = sum(PONDIH,na.rm = T)) %>% 
+  summarise(n = sum(PONDERA,na.rm = T) / ndatos) %>% 
   group_by(pub_priv) %>% 
   mutate(porcentaje = n/sum(n)) %>% 
   mutate(decil = factor(DECCFR,levels = 10:1))  
@@ -133,13 +150,13 @@ graf_gw %>%
             color = "white", size = 8) +
   labs(title="Población estudiantil de universidades publicas y privadas según decil de ingreso per cápita familiar",
        x="Universidades",
-       y="Porcentaje de personas que estudian en la universidad") +
+       y="Porcentaje de jóvenes que estudian en la universidad") +
   theme_light() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_y_continuous(labels = scales::comma, limits=c(0,1), breaks = seq(0,1,.1)) +
   scale_fill_viridis_d()
   #ggsave("con_padres_universidad_porcentaje_Gw.png")
-  ggsave(paste0(year,"_con_padres_universidad_porcentaje_Gw.png"))
+  ggsave(paste0(nombre,"_con_padres_universidad_porcentaje_Gw.png"))
 
 #Calculate the sum of porcentaje for decil 1-6 and 7-10, for each pub_priv value
 tabla1<-graf_gw %>% 
@@ -154,10 +171,14 @@ tabla1
 
 #Create pretty table image from tabla1, with minimal table size
 library(kableExtra)
-kable(tabla1, "html") %>%
+
+html_table<-kable(tabla1, "html") %>%
   kable_styling("striped", full_width = F) %>%
-  row_spec(0, bold = T, color = "white", background = "grey") %>%
-  save_kable("con_padres_universidad_porcentaje_Gw_tabla.png")
+  row_spec(0, bold = T, color = "white", background = "grey")
+  #save_kable("con_padres_universidad_porcentaje_Gw_tabla.png")
+
+#save html_table to html file
+writeLines(html_table, paste0(nombre,"_con_padres_universidad_porcentaje_Gw_tabla.html"))
 
 
 tabla2 <- df %>% 
@@ -197,7 +218,7 @@ graf_gw2<- dt_age %>%
   mutate(pub_priv = case_when(CH11 == 1~"Públicas",
                               CH11 != 1~"Privadas")) %>%
   group_by(DECCFR,pub_priv,REGION) %>% 
-  summarise(n = sum(PONDIH,na.rm = T)) %>% 
+  summarise(n = sum(PONDERA,na.rm = T) / ndatos) %>% 
   group_by(pub_priv,REGION) %>% 
   mutate(porcentaje = n/sum(n)) %>% 
   mutate(decil = factor(DECCFR,levels = 10:1)) %>%
@@ -217,11 +238,116 @@ graf_gw3 <- graf_gw2 %>%
 
 tabla3<-graf_gw3 %>%
   group_by(pub_priv, REGION) %>%
-  mutate(total=deciles_1_6+deciles_7_10) %>%
+  mutate(Estudiantes=deciles_1_6+deciles_7_10) %>%
   mutate(deciles_1_6 = round(deciles_1_6/total*100,0),
          deciles_7_10 = round(deciles_7_10/total*100,0))
 
-#Sacar los datos para Córdoba
+#Sacar los datos por aglomerado urbano
+graf_ciudad<- dt_age %>% 
+  filter(CH10==1 & CH12==7) %>% 
+
+  mutate(pub_priv = case_when(CH11 == 1~"Públicas",
+                              CH11 != 1~"Privadas")) %>%
+#2 = Gran La Plata #3 = Bahía Blanca ‐ Cerri #4 = Gran RosarioINDEC-EPH3 #5 = Gran Santa Fé #6 = Gran Paraná #7 = Posadas #8 = Gran Resistencia  #9 = Cdro. Rivadavia – Rada Tilly #10 = Gran Mendoza #12 = Corrientes #13 = Gran Córdoba #14 = Concordia #15 = Formosa #17 = Neuquén – Plottier #18 = S.del Estero ‐ La Banda #19 = Jujuy ‐ Palpalá #20 = Río Gallegos #22 = Gran Catamarca #23 = Salta #25 = La Rioja #26 = San Luis ‐ El Chorrillo #27 = Gran San Juan #29 = Gran Tucumán ‐ T. Viejo #30 = Santa Rosa ‐ Toay #31 = Ushuaia ‐ Río Grande  #32 = Ciudad de Buenos Aires #33 = Partidos del GBA #34 = Mar del Plata ‐ Batán #36 = Río Cuarto #38 = San Nicolás – Villa Constitución #91 = Rawson – Trelew #93 = Viedma – Carmen de Patagones
+  mutate(AGLOMERADO = case_when(AGLOMERADO == 1~"Gran Buenos Aires",
+                            AGLOMERADO == 2~"Gran La Plata",
+                            AGLOMERADO == 3~"Bahía Blanca ‐ Cerri",
+                            AGLOMERADO == 4~"Gran Rosario",
+                            AGLOMERADO == 5~"Gran Santa Fé",
+                            AGLOMERADO == 6~"Gran Paraná",
+                            AGLOMERADO == 7~"Posadas",
+                            AGLOMERADO == 8~"Gran Resistencia",
+                            AGLOMERADO == 9~"Cdro. Rivadavia – Rada Tilly",
+                            AGLOMERADO == 10~"Gran Mendoza",
+                            AGLOMERADO == 12~"Corrientes",
+                            AGLOMERADO == 13~"Gran Córdoba",
+                            AGLOMERADO == 14~"Concordia",
+                            AGLOMERADO == 15~"Formosa",
+                            AGLOMERADO == 17~"Neuquén – Plottier",
+                            AGLOMERADO == 18~"S.del Estero ‐ La Banda",
+                            AGLOMERADO == 19~"Jujuy ‐ Palpalá",
+                            AGLOMERADO == 20~"Río Gallegos",
+                            AGLOMERADO == 22~"Gran Catamarca",
+                            AGLOMERADO == 23~"Salta",
+                            AGLOMERADO == 25~"La Rioja",
+                            AGLOMERADO == 26~"San Luis ‐ El Chorrillo",
+                            AGLOMERADO == 27~"Gran San Juan",
+                            AGLOMERADO == 29~"Gran Tucumán ‐ T. Viejo",
+                            AGLOMERADO == 30~"Santa Rosa ‐ Toay",
+                            AGLOMERADO == 31~"Ushuaia ‐ Río Grande",
+                            AGLOMERADO == 32~"Ciudad de Buenos Aires",
+                            AGLOMERADO == 33~"Partidos del GBA",
+                            AGLOMERADO == 34~"Mar del Plata ‐ Batán",
+                            AGLOMERADO == 36~"Río Cuarto",
+                            AGLOMERADO == 38~"San Nicolás – Villa Constitución",
+                            AGLOMERADO == 91~"Rawson – Trelew",
+                            AGLOMERADO == 93~"Viedma – Carmen de Patagones")) %>%
+  group_by(DECCFR,pub_priv,AGLOMERADO) %>% 
+  summarise(n = sum(PONDERA,na.rm = T) / ndatos) %>% 
+  group_by(pub_priv) %>% 
+  mutate(porcentaje = n/sum(n)) %>% 
+  mutate(decil = factor(DECCFR,levels = 10:1))
+  
+  
+graf_ciudad2<-graf_ciudad %>%
+ mutate(decile_group = ifelse(decil %in% 1:5, "deciles_1_5", "deciles_6_10")) %>%
+  group_by(pub_priv, decile_group, AGLOMERADO) %>%
+  summarise(n = sum(n)) %>%
+  pivot_wider(names_from = decile_group, values_from = n) %>%
+  group_by(pub_priv,AGLOMERADO) %>%
+  mutate(Estudiantes=deciles_1_5+deciles_6_10) %>%
+  mutate(deciles_1_5 = round(deciles_1_5/total*100,0),
+  deciles_6_10 = round(deciles_6_10/total*100,0)) %>%
+  #Add a percentage to the table
+  mutate(deciles_1_5p = paste0(deciles_1_5,"%")) %>%
+  mutate(deciles_6_10p = paste0(deciles_6_10,"%")) %>%
+  select(-deciles_1_5,-deciles_6_10)
+
+# Add Total row from dt_age
+total_row <- dt_age %>%
+  filter(CH10 == 1 & CH12 == 7) %>%
+  mutate(pub_priv = case_when(
+    CH11 == 1 ~ "Públicas",
+    CH11 != 1 ~ "Privadas"
+  )) %>%
+  group_by(DECCFR,pub_priv) %>% 
+  summarise(n = sum(PONDERA, na.rm = TRUE) / ndatos) %>%
+  mutate(decil = factor(DECCFR,levels = 10:1)) %>%
+  mutate(decile_group = ifelse(decil %in% 1:5, "deciles_1_5", "deciles_6_10")) %>%
+  group_by(pub_priv, decile_group) %>%
+  summarise(n = sum(n)) %>%
+  pivot_wider(names_from = decile_group, values_from = n) %>%
+  #pivot_wider(names_from = pub_priv, values_from = n) %>%
+  mutate(Estudiantes=deciles_1_5+deciles_6_10, AGLOMERADO = "Total") %>%
+  mutate(deciles_1_5 = round(deciles_1_5/total*100,0),
+  deciles_6_10 = round(deciles_6_10/total*100,0)) %>%
+  #Add a percentage to the table
+  mutate(deciles_1_5p = paste0(deciles_1_5,"%")) %>%
+  mutate(deciles_6_10p = paste0(deciles_6_10,"%")) %>%
+  select(-deciles_1_5,-deciles_6_10)
+
+
+
+
+
+graf_ciudad3 <- bind_rows(graf_ciudad2 %>%  arrange(deciles_1_5p), total_row)
+
+
+#Create a Kable table for graf_ciudad2 filtering by pub_priv=="Públicas"
+filtered_data <- graf_ciudad3 %>% filter(pub_priv == "Públicas" & total > 10000)
+
+html_aglom <- kable(filtered_data, "html", align = "c") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(0, bold = T, color = "white", background = "grey") %>%
+  row_spec(which(filtered_data$AGLOMERADO == "Total"), bold = T, color = "black", background = "grey") %>%
+  row_spec(which(filtered_data$AGLOMERADO == "Total") - 1, color = "black")
+
+  #Add a 
+  #save_kable("deciles_publicas_ciudad.png")
+
+#save html_table to html file
+writeLines(html_aglom, "deciles_publicas_ciudad.html")
+
 
 #Como evolucionaron los % de la tabla 1 por años?
 
